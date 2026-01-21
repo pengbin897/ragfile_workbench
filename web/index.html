@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG入库预处理工作台</title>
+    <link rel="stylesheet" href="/css/style.css?v=2.4">
+    <!-- ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">📋</div>
+                <div class="logo-text">
+                    <span class="logo-title">RAG文档预分析工具</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-page="scan">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">文档扫描</span>
+                </a>
+                <a href="#" class="nav-item" data-page="report">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">分析报告</span>
+                </a>
+                <a href="#" class="nav-item" data-page="details">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">设置</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <span id="theme-icon">🌙</span>
+                    <span class="theme-label" id="theme-label">暗色</span>
+                </button>
+                <div class="version">v0.0.1</div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 扫描设置页面 -->
+            <section id="page-scan" class="page active">
+                <div class="page-header">
+                    <h1>扫描设置</h1>
+                    <p class="page-subtitle">选择要扫描的文档文件夹</p>
+                </div>
+
+                <div class="scan-card">
+                    <div class="input-group">
+                        <label for="scan-path">文件夹路径</label>
+                        <div class="input-with-button">
+                            <input type="text" id="scan-path" placeholder="点击浏览按钮选择文件夹，或手动输入路径" />
+                            <button id="btn-browse" class="btn-browse" title="浏览文件夹">
+                                📁 浏览
+                            </button>
+                        </div>
+                        <p class="input-hint">支持任意层级的文件夹，将自动扫描所有子目录</p>
+                    </div>
+
+                    <div class="format-tags">
+                        <span class="format-tag">📄 DOCX</span>
+                        <span class="format-tag">📊 XLSX</span>
+                        <span class="format-tag">📽️ PPTX</span>
+                        <span class="format-tag">📕 PDF</span>
+                        <span class="format-tag">📝 TXT</span>
+                        <span class="format-tag">📋 MD</span>
+                    </div>
+
+                    <button id="btn-start-scan" class="btn-primary">
+                        <span class="btn-icon">🔍</span>
+                        <span>开始扫描</span>
+                    </button>
+                </div>
+
+                <!-- 扫描进度 -->
+                <div id="scan-progress" class="progress-card hidden">
+                    <div class="progress-header">
+                        <h3>扫描进行中...</h3>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span id="progress-current">正在准备...</span>
+                        <span id="progress-count">0 / 0</span>
+                    </div>
+                    <div id="progress-log" class="progress-log"></div>
+                </div>
+            </section>
+
+            <!-- ========== 第1层+第2层：扫描报告（总览+文档分类）========== -->
+            <section id="page-report" class="page">
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h1>扫描报告</h1>
+                        <p class="page-subtitle" id="report-scan-path">-</p>
+                    </div>
+                    <button class="btn-browse" onclick="exportReport()" title="导出脱敏的HTML评估报告"
+                        style="padding: 8px 16px;">
+                        📋 导出报告
+                    </button>
+                </div>
+
+                <!-- 第1层：执行摘要 -->
+                <div class="executive-summary" id="executive-summary">
+                    <p id="summary-text">扫描完成后将显示摘要...</p>
+                </div>
+
+                <!-- 第1层：核心卡片 -->
+                <div class="overview-section">
+                    <div class="summary-cards">
+                        <div class="summary-card">
+                            <div class="summary-icon">📁</div>
+                            <div class="summary-content">
+                                <span class="summary-value" id="total-files">0</span>
+                                <span class="summary-label">总文件数</span>
+                            </div>
+                        </div>
+                        <div class="summary-card success">
+                            <div class="summary-icon">✅</div>
+                            <div class="summary-content">
+                                <span class="summary-value" id="parsable-count">0</span>
+                                <span class="summary-label">可解析</span>
+                            </div>
+                        </div>
+                        <div class="summary-card warning" onclick="showProblemFiles('ocr')" style="cursor: pointer;">
+                            <div class="summary-icon">📷</div>
+                            <div class="summary-content">
+                                <span class="summary-value" id="ocr-count">0</span>
+                                <span class="summary-label">需OCR</span>
+                            </div>
+                        </div>
+                        <div class="summary-card danger" onclick="showProblemFiles('failed')" style="cursor: pointer;">
+                            <div class="summary-icon">❌</div>
+                            <div class="summary-content">
+                                <span class="summary-value" id="failed-count">0</span>
+                                <span class="summary-label">解析失败</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第2层：文档分类（核心） -->
+                <div class="category-section">
+                    <h3>📂 文档分类（按处理难度）</h3>
+                    <div class="category-cards">
+                        <!-- 简单 -->
+                        <div class="category-card simple" onclick="toggleCategoryList('simple')">
+                            <div class="category-header">
+                                <span class="category-icon">🟢</span>
+                                <span class="category-name">简单</span>
+                            </div>
+                            <div class="category-count" id="simple-count">0</div>
+                            <div class="category-desc">纯文字，无表格图片</div>
+                            <div class="category-ratio" id="simple-ratio">0%</div>
+                        </div>
+                        <!-- 中等 -->
+                        <div class="category-card medium" onclick="toggleCategoryList('medium')">
+                            <div class="category-header">
+                                <span class="category-icon">🟡</span>
+                                <span class="category-name">中等</span>
+                            </div>
+                            <div class="category-count" id="medium-count">0</div>
+                            <div class="category-desc">含表格或图片</div>
+                            <div class="category-ratio" id="medium-ratio">0%</div>
+                        </div>
+                        <!-- 复杂 -->
+                        <div class="category-card complex" onclick="toggleCategoryList('complex')">
+                            <div class="category-header">
+                                <span class="category-icon">🔴</span>
+                                <span class="category-name">复杂</span>
+                            </div>
+                            <div class="category-count" id="complex-count">0</div>
+                            <div class="category-desc">扫描PDF/解析失败</div>
+                            <div class="category-ratio" id="complex-ratio">0%</div>
+                        </div>
+                    </div>
+                    <!-- 分类文件列表（点击展开） -->
+                    <div id="category-file-list" class="category-file-list hidden">
+                        <div class="list-header">
+                            <h4 id="category-list-title">文件列表</h4>
+                            <button class="btn-close" onclick="closeCategoryList()">✕</button>
+                        </div>
+                        <div id="category-list-body" class="list-body"></div>
+                    </div>
+                </div>
+
+                <!-- 长度统计简要 -->
+                <div class="length-summary">
+                    <span>📏 文档长度中位数: <strong id="median-length">-</strong> 字</span>
+                    <span class="divider">|</span>
+                    <span>P90 (90%的文档在此以下): <strong id="p90-length">-</strong> 字</span>
+                </div>
+            </section>
+
+            <!-- ========== 第3层：详细统计 ========== -->
+            <section id="page-details" class="page">
+                <div class="page-header">
+                    <h1>详细统计</h1>
+                    <p class="page-subtitle">格式分布、长度分布、结构数据</p>
+                </div>
+
+                <!-- 格式分布 -->
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h3>文件格式分布</h3>
+                        <div id="chart-format" class="chart-container"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>PDF页面类型</h3>
+                        <div id="chart-pdf" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <!-- 长度分布 -->
+                <div class="stats-section">
+                    <h3>📊 文档长度分布</h3>
+                    <div class="stats-grid">
+                        <div class="stats-card">
+                            <h4>分位数统计</h4>
+                            <table class="stats-table">
+                                <tr>
+                                    <td>最小值</td>
+                                    <td id="stats-min">-</td>
+                                </tr>
+                                <tr>
+                                    <td>P25 (25%)</td>
+                                    <td id="stats-p25">-</td>
+                                </tr>
+                                <tr>
+                                    <td>中位数 (P50)</td>
+                                    <td id="stats-median">-</td>
+                                </tr>
+                                <tr>
+                                    <td>P75 (75%)</td>
+                                    <td id="stats-p75">-</td>
+                                </tr>
+                                <tr>
+                                    <td>P90 (90%)</td>
+                                    <td id="stats-p90">-</td>
+                                </tr>
+                                <tr>
+                                    <td>最大值</td>
+                                    <td id="stats-max">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="stats-card">
+                            <h4>长度分布区间</h4>
+                            <div id="chart-length" class="chart-container-small"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 结构数据（客观数值） -->
+                <div class="stats-section">
+                    <h3>🔧 结构数据</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>指标</th>
+                                <th>数量</th>
+                                <th>占比</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>含表格文档</td>
+                                <td id="docs-with-tables">0</td>
+                                <td id="docs-with-tables-ratio">0%</td>
+                            </tr>
+                            <tr>
+                                <td>含图片文档</td>
+                                <td id="docs-with-images">0</td>
+                                <td id="docs-with-images-ratio">0%</td>
+                            </tr>
+                            <tr>
+                                <td>有标题层级</td>
+                                <td id="docs-with-headings">0</td>
+                                <td id="docs-with-headings-ratio">0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ========== 第4层：审核台 ========== -->
+            <section id="page-review" class="page">
+                <div class="page-header">
+                    <h1>审核台</h1>
+                    <p class="page-subtitle">相似度检测 & 敏感信息审核</p>
+                </div>
+
+                <!-- 相似度检测 -->
+                <div class="review-section">
+                    <div class="review-header" onclick="toggleSection('similar-section')">
+                        <h3>🔄 相似度检测</h3>
+                        <span class="review-summary">
+                            涉及 <strong id="similar-files-count">0</strong> 份文档，
+                            共 <strong id="similar-groups-count">0</strong> 组
+                        </span>
+                        <span class="toggle-icon">▼</span>
+                    </div>
+                    <div id="similar-section" class="review-content">
+                        <div id="similar-groups-container">
+                            <div class="empty-hint">暂无高相似度文档组 🎉</div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <script src="/js/app.js?v=2.4"></script>
+    <script src="/js/scanner.js?v=2.4"></script>
+    <script src="/js/charts.js?v=2.4"></script>
+    <script src="/js/report.js?v=2.4"></script>
+</body>
+
+</html>
