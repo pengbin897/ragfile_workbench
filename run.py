@@ -17,13 +17,15 @@ def main():
     print(f"📁 项目目录: {root_dir}")
     
     # 使用 uvicorn 启动
-    cmd = [
+    start_server_cmd = [
         sys.executable, "-m", "uvicorn",
         "main:app",
         "--host", "127.0.0.1",
-        "--port", "8000",
+        "--port", "8080",
         "--reload"
     ]
+
+    start_web_cmd = [ sys.executable, "-m", "pnpm", "dev"]
 
     os.chdir(os.path.join(root_dir, "backend"))
     
@@ -40,7 +42,8 @@ def main():
     
     # 启动服务
     try:
-        subprocess.run(cmd)
+        subprocess.run(start_server_cmd)
+        subprocess.run(start_web_cmd)
     except KeyboardInterrupt:
         print("\n👋 服务已停止")
 

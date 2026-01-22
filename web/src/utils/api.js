@@ -3,8 +3,12 @@
  */
 
 // 浏览文件夹
-export async function browseFolder() {
-  const response = await fetch('/api/folder/browse')
+export async function browseFolder(path) {
+  const response = await fetch('/api/file/open', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path })
+  })
   const data = await response.json()
   return data
 }

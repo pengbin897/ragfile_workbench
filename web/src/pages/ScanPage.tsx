@@ -1,4 +1,7 @@
 import React, { useState, useRef } from 'react'
+import { UploadOutlined } from '@ant-design/icons';
+import { Button, Upload } from 'antd'
+import type { UploadProps } from 'antd';
 import { useApp } from '../context/AppContext'
 import { browseFolder, startScan, getScanResult } from '../utils/api'
 
@@ -26,6 +29,19 @@ export default function ScanPage() {
   const [logs, setLogs] = useState([])
   const inputRef = useRef(null)
 
+  const props: UploadProps = {
+    beforeUpload: (file) => {
+      const isPNG = file.type === 'image/png';
+      if (!isPNG) {
+        message.error(`${file.name} is not a png file`);
+      }
+      return isPNG || Upload.LIST_IGNORE;
+    },
+    onChange: (info) => {
+      console.log(info.fileList);
+    },
+  };
+  
   const addLog = (message) => {
     const time = new Date().toLocaleTimeString()
     setLogs(prev => {
@@ -41,6 +57,7 @@ export default function ScanPage() {
   const handleBrowse = async () => {
     setIsBrowsing(true)
     try {
+      // 浏览本地文件夹
       const data = await browseFolder()
       if (data.status === 'success' && data.path) {
         setScanPath(data.path)
@@ -168,13 +185,13 @@ export default function ScanPage() {
               placeholder="点击浏览按钮选择文件夹，或手动输入路径"
               className="flex-1 p-4 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] text-sm outline-none transition-colors focus:border-[var(--accent-primary)] placeholder:text-[var(--text-muted)]"
             />
-            <button
-              onClick={handleBrowse}
-              disabled={isBrowsing}
+            <Upload
               className="px-6 py-4 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg text-[var(--text-primary)] text-sm cursor-pointer whitespace-nowrap transition-all hover:bg-[var(--bg-card-hover)] hover:border-[var(--accent-primary)] disabled:opacity-60 disabled:cursor-not-allowed"
+              directory
+              action="/api/file/upload"
             >
-              {isBrowsing ? '选择中...' : '📁 浏览'}
-            </button>
+              📁 选择
+            </Upload>
           </div>
           <p className="text-xs text-[var(--text-muted)] mt-2">
             支持任意层级的文件夹，将自动扫描所有子目录
