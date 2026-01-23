@@ -1,4 +1,3 @@
-import React from 'react'
 import { useApp } from '../context/AppContext'
 import { formatNumber } from '../utils/format'
 import { FormatChart, PdfPageTypeChart, LengthChart } from '../components/Charts'

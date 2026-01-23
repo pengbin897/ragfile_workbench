@@ -1,11 +1,16 @@
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import * as echarts from 'echarts'
 import { getFormatLabel } from '../utils/format'
+import type { PdfPageStats, LengthStats } from '../utils/api'
+
+interface FormatChartProps {
+  data?: Record<string, number>
+}
 
 // 格式分布图表
-export function FormatChart({ data }) {
-  const chartRef = useRef(null)
-  const chartInstance = useRef(null)
+export function FormatChart({ data }: FormatChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null)
+  const chartInstance = useRef<echarts.ECharts | null>(null)
 
   useEffect(() => {
     if (!chartRef.current) return
@@ -30,7 +35,7 @@ export function FormatChart({ data }) {
       value: value
     }))
 
-    const option = {
+    const option: echarts.EChartsOption = {
       backgroundColor: 'transparent',
       tooltip: {
         trigger: 'item',
@@ -97,10 +102,14 @@ export function FormatChart({ data }) {
   return <div ref={chartRef} className="h-64" />
 }
 
+interface PdfPageTypeChartProps {
+  pageStats?: PdfPageStats
+}
+
 // PDF页面类型图表
-export function PdfPageTypeChart({ pageStats }) {
-  const chartRef = useRef(null)
-  const chartInstance = useRef(null)
+export function PdfPageTypeChart({ pageStats }: PdfPageTypeChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null)
+  const chartInstance = useRef<echarts.ECharts | null>(null)
 
   useEffect(() => {
     if (!chartRef.current) return
@@ -123,7 +132,7 @@ export function PdfPageTypeChart({ pageStats }) {
     const scanCount = pageStats.scan_pages || 0
     const lowCount = pageStats.low_density_pages || 0
 
-    const option = {
+    const option: echarts.EChartsOption = {
       backgroundColor: 'transparent',
       tooltip: {
         trigger: 'item',
@@ -193,10 +202,14 @@ export function PdfPageTypeChart({ pageStats }) {
   return <div ref={chartRef} className="h-64" />
 }
 
+interface LengthChartProps {
+  stats?: LengthStats
+}
+
 // 长度分布图表
-export function LengthChart({ stats }) {
-  const chartRef = useRef(null)
-  const chartInstance = useRef(null)
+export function LengthChart({ stats }: LengthChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null)
+  const chartInstance = useRef<echarts.ECharts | null>(null)
 
   useEffect(() => {
     if (!chartRef.current || !stats) return
@@ -215,7 +228,7 @@ export function LengthChart({ stats }) {
       { name: '>10K', value: stats.over_10000 || 0 }
     ]
 
-    const option = {
+    const option: echarts.EChartsOption = {
       backgroundColor: 'transparent',
       tooltip: {
         trigger: 'axis',

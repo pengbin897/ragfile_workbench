@@ -1,7 +1,12 @@
-import React from 'react'
 import { useApp } from '../context/AppContext'
 
-const navItems = [
+interface NavItem {
+  id: 'scan' | 'report' | 'details'
+  icon: string
+  text: string
+}
+
+const navItems: NavItem[] = [
   { id: 'scan', icon: '⚙️', text: '文档扫描' },
   { id: 'report', icon: '📊', text: '分析报告' },
   { id: 'details', icon: '📈', text: '设置' }

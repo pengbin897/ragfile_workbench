@@ -1,15 +1,43 @@
-import React, { useState } from 'react'
+import { useState, ReactNode } from 'react'
 import { useApp } from '../context/AppContext'
 import { exportReport } from '../utils/api'
 import { formatNumber } from '../utils/format'
 import FileList from '../components/FileList'
-import SimilarGroups from '../components/SimilarGroups'
+
+interface FileListData {
+  files: string[]
+  title: string
+}
+
+interface CategoryStats {
+  simple_count?: number
+  medium_count?: number
+  complex_count?: number
+  simple_files?: string[]
+  medium_files?: string[]
+  complex_files?: string[]
+}
+
+interface OcrFile {
+  file_info: {
+    path: string
+  }
+}
+
+interface ReviewFile {
+  file_info: {
+    path: string
+  }
+}
+
+type CategoryType = 'simple' | 'medium' | 'complex'
+type ProblemType = 'ocr' | 'failed'
 
 export default function ReportPage() {
   const { scanResult } = useApp()
   const [showFileList, setShowFileList] = useState(false)
-  const [fileListData, setFileListData] = useState({ files: [], title: '' })
-  const [expandedSection, setExpandedSection] = useState('similar-section')
+  const [fileListData, setFileListData] = useState<FileListData>({ files: [], title: '' })
+  const [, setExpandedSection] = useState<string | null>('similar-section')
 
   if (!scanResult) {
     return (
@@ -25,8 +53,13 @@ export default function ReportPage() {
     )
   }
 
-  const result = scanResult
-  const categoryStats = result.category_stats || {}
+  const result = scanResult as typeof scanResult & {
+    category_stats?: CategoryStats
+    ocr_files?: OcrFile[]
+    review_files?: ReviewFile[]
+    task_id?: string
+  }
+  const categoryStats: CategoryStats = result.category_stats || {}
   const simpleCount = categoryStats.simple_count || 0
   const mediumCount = categoryStats.medium_count || 0
   const complexCount = categoryStats.complex_count || 0
@@ -37,7 +70,8 @@ export default function ReportPage() {
   const parsableRatio = total > 0 ? Math.round(parsableCount / total * 100) : 0
 
   const similarGroups = result.similar_groups || []
-  const similarFilesCount = new Set(similarGroups.flatMap(g => g.files)).size
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _similarFilesCount = new Set(similarGroups.flatMap(g => g.files)).size
 
   const handleExport = () => {
     if (result.task_id) {
@@ -47,8 +81,8 @@ export default function ReportPage() {
     }
   }
 
-  const showCategoryFiles = (category) => {
-    const titleMap = {
+  const showCategoryFiles = (category: CategoryType) => {
+    const titleMap: Record<CategoryType, string> = {
       simple: '🟢 简单文档列表',
       medium: '🟡 中等文档列表',
       complex: '🔴 复杂文档列表'
@@ -58,8 +92,8 @@ export default function ReportPage() {
     setShowFileList(true)
   }
 
-  const showProblemFiles = (type) => {
-    let files = []
+  const showProblemFiles = (type: ProblemType) => {
+    let files: string[] = []
     let titleText = ''
     if (type === 'ocr') {
       const sourceList = result.ocr_files || []
@@ -74,13 +108,13 @@ export default function ReportPage() {
     setShowFileList(true)
   }
 
-  const toggleSection = (sectionId) => {
-    setExpandedSection(expandedSection === sectionId ? null : sectionId)
+  const _toggleSection = (sectionId: string) => {
+    setExpandedSection(prev => prev === sectionId ? null : sectionId)
   }
 
   // 执行摘要
-  const renderSummaryText = () => {
-    const parts = []
+  const renderSummaryText = (): ReactNode[] => {
+    const parts: ReactNode[] = []
     parts.push(<span key="total">本次扫描 <strong>{total.toLocaleString()}</strong> 份文档。</span>)
 
     if (parsableRatio >= 90) {
@@ -130,7 +164,7 @@ export default function ReportPage() {
           <div className="bg-[var(--bg-card)] rounded-xl p-6 flex items-center gap-4">
             <div className="text-3xl">📁</div>
             <div className="flex flex-col">
-              <span className="text-2xl font-semibold">{result.total_files.toLocaleString()}</span>
+              <span className="text-2xl font-semibold">{(result.total_files || 0).toLocaleString()}</span>
               <span className="text-sm text-[var(--text-secondary)]">总文件数</span>
             </div>
           </div>
@@ -222,9 +256,9 @@ export default function ReportPage() {
       {/* 长度统计简要 */}
       {result.length_stats && (
         <div className="bg-[var(--bg-card)] rounded-lg px-6 py-4 flex items-center gap-4 text-sm text-[var(--text-secondary)]">
-          <span>📏 文档长度中位数: <strong className="text-[var(--accent-primary)]">{formatNumber(Math.round(result.length_stats.median))}</strong> 字</span>
+          <span>📏 文档长度中位数: <strong className="text-[var(--accent-primary)]">{formatNumber(Math.round(result.length_stats.median || 0))}</strong> 字</span>
           <span className="text-[var(--border-color)]">|</span>
-          <span>P90 (90%的文档在此以下): <strong className="text-[var(--accent-primary)]">{formatNumber(Math.round(result.length_stats.p90))}</strong> 字</span>
+          <span>P90 (90%的文档在此以下): <strong className="text-[var(--accent-primary)]">{formatNumber(Math.round(result.length_stats.p90 || 0))}</strong> 字</span>
         </div>
       )}
     </section>

@@ -1,11 +1,15 @@
-import React, { useState, useRef } from 'react'
-import { UploadOutlined } from '@ant-design/icons';
-import { Button, Upload } from 'antd'
-import type { UploadProps } from 'antd';
+import { useState, useRef, KeyboardEvent } from 'react'
+import { Upload } from 'antd'
 import { useApp } from '../context/AppContext'
-import { browseFolder, startScan, getScanResult } from '../utils/api'
+import { startScan, getScanResult } from '../utils/api'
+import type { ScanResult } from '../utils/api'
 
-const formatTags = [
+interface FormatTag {
+  icon: string
+  name: string
+}
+
+const formatTags: FormatTag[] = [
   { icon: '📄', name: 'DOCX' },
   { icon: '📊', name: 'XLSX' },
   { icon: '📽️', name: 'PPTX' },
@@ -14,63 +18,46 @@ const formatTags = [
   { icon: '📋', name: 'MD' }
 ]
 
+interface Progress {
+  percentage: number
+  message: string
+  processedCount: number
+  totalCount: number
+}
+
+interface ProgressData {
+  percentage?: number
+  message?: string
+  current_file?: string
+  processed_count?: number
+  total_count?: number
+  status?: 'completed' | 'error' | 'processing'
+}
+
 export default function ScanPage() {
   const { setScanResult, setCurrentPage, setCurrentTaskId } = useApp()
   const [scanPath, setScanPath] = useState('')
   const [isScanning, setIsScanning] = useState(false)
-  const [isBrowsing, setIsBrowsing] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
-  const [progress, setProgress] = useState({
+  const [progress, setProgress] = useState<Progress>({
     percentage: 0,
     message: '正在准备...',
     processedCount: 0,
     totalCount: 0
   })
-  const [logs, setLogs] = useState([])
-  const inputRef = useRef(null)
-
-  const props: UploadProps = {
-    beforeUpload: (file) => {
-      const isPNG = file.type === 'image/png';
-      if (!isPNG) {
-        message.error(`${file.name} is not a png file`);
-      }
-      return isPNG || Upload.LIST_IGNORE;
-    },
-    onChange: (info) => {
-      console.log(info.fileList);
-    },
-  };
+  const [logs, setLogs] = useState<string[]>([])
+  const inputRef = useRef<HTMLInputElement>(null)
   
-  const addLog = (message) => {
+  const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString()
     setLogs(prev => {
-      const newLogs = [...prev, `[${time}] ${message}`]
+      const newLogs = [...prev, `[${time}] ${msg}`]
       // 限制日志条数
       if (newLogs.length > 50) {
         return newLogs.slice(-50)
       }
       return newLogs
     })
-  }
-
-  const handleBrowse = async () => {
-    setIsBrowsing(true)
-    try {
-      // 浏览本地文件夹
-      const data = await browseFolder()
-      if (data.status === 'success' && data.path) {
-        setScanPath(data.path)
-      }
-    } catch (error) {
-      console.error('浏览文件夹失败:', error)
-      if (inputRef.current) {
-        inputRef.current.placeholder = '无法打开选择器，请手动输入路径'
-        inputRef.current.focus()
-      }
-    } finally {
-      setIsBrowsing(false)
-    }
   }
 
   const handleStartScan = async () => {
@@ -95,20 +82,20 @@ export default function ScanPage() {
       await connectProgressSSE(taskId)
     } catch (error) {
       console.error('扫描错误:', error)
-      addLog(`错误: ${error.message}`)
-      alert(`扫描失败: ${error.message}`)
+      addLog(`错误: ${(error as Error).message}`)
+      alert(`扫描失败: ${(error as Error).message}`)
     } finally {
       setIsScanning(false)
     }
   }
 
-  const connectProgressSSE = (taskId) => {
+  const connectProgressSSE = (taskId: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       const eventSource = new EventSource(`/api/scan/progress/${taskId}`)
 
-      eventSource.addEventListener('progress', (event) => {
+      eventSource.addEventListener('progress', (event: MessageEvent) => {
         try {
-          const progressData = JSON.parse(event.data)
+          const progressData: ProgressData = JSON.parse(event.data)
           setProgress({
             percentage: progressData.percentage || 0,
             message: progressData.message || progressData.current_file || '处理中...',
@@ -147,18 +134,18 @@ export default function ScanPage() {
     })
   }
 
-  const loadScanResult = async (taskId) => {
+  const loadScanResult = async (taskId: string) => {
     try {
-      const result = await getScanResult(taskId)
+      const result: ScanResult = await getScanResult(taskId)
       setScanResult(result)
       setCurrentPage('report')
     } catch (error) {
       console.error('加载结果错误:', error)
-      addLog(`加载结果失败: ${error.message}`)
+      addLog(`加载结果失败: ${(error as Error).message}`)
     }
   }
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleStartScan()
     }

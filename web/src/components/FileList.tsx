@@ -1,14 +1,19 @@
-import React from 'react'
 import { openFile } from '../utils/api'
 import { getFileName } from '../utils/format'
 
-export default function FileList({ files, title, onClose }) {
-  const handleOpenFile = async (filePath) => {
+interface FileListProps {
+  files?: string[]
+  title: string
+  onClose: () => void
+}
+
+export default function FileList({ files, title, onClose }: FileListProps) {
+  const handleOpenFile = async (filePath: string) => {
     try {
       await openFile(filePath)
     } catch (error) {
       console.error('打开文件错误:', error)
-      alert(`打开文件失败: ${error.message}`)
+      alert(`打开文件失败: ${(error as Error).message}`)
     }
   }
 

@@ -1,4 +1,3 @@
-import React from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import Sidebar from './components/Sidebar'
 import ScanPage from './pages/ScanPage'

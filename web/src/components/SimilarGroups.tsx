@@ -1,14 +1,18 @@
-import React from 'react'
 import { openFile } from '../utils/api'
 import { getFileName } from '../utils/format'
+import type { SimilarGroup } from '../utils/api'
 
-export default function SimilarGroups({ groups }) {
-  const handleOpenFile = async (filePath) => {
+interface SimilarGroupsProps {
+  groups?: SimilarGroup[]
+}
+
+export default function SimilarGroups({ groups }: SimilarGroupsProps) {
+  const handleOpenFile = async (filePath: string) => {
     try {
       await openFile(filePath)
     } catch (error) {
       console.error('打开文件错误:', error)
-      alert(`打开文件失败: ${error.message}`)
+      alert(`打开文件失败: ${(error as Error).message}`)
     }
   }
 

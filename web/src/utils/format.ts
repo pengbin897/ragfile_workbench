@@ -3,7 +3,7 @@
  */
 
 // 格式化文件大小
-export function formatFileSize(bytes) {
+export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B'
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
@@ -12,14 +12,14 @@ export function formatFileSize(bytes) {
 }
 
 // 格式化数字（添加千分位）
-export function formatNumber(num) {
+export function formatNumber(num: number | undefined | null): string {
   if (num === undefined || num === null) return '-'
   return num.toLocaleString()
 }
 
 // 获取格式标签
-export function getFormatLabel(format) {
-  const labels = {
+export function getFormatLabel(format: string): string {
+  const labels: Record<string, string> = {
     'docx': 'DOCX',
     'xlsx': 'XLSX',
     'pptx': 'PPTX',
@@ -34,7 +34,7 @@ export function getFormatLabel(format) {
 }
 
 // HTML转义
-export function escapeHtml(str) {
+export function escapeHtml(str: string | null | undefined): string {
   if (!str) return ''
   return str.replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -44,6 +44,6 @@ export function escapeHtml(str) {
 }
 
 // 获取文件名
-export function getFileName(path) {
+export function getFileName(path: string): string {
   return path.split('/').pop() || path.split('\\').pop() || path
 }
